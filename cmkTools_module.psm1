@@ -72,17 +72,8 @@ function get-CmkHost
 function get-AllCmkHost
 {
      $requestResult = Invoke-WebRequest -Method Post "http://$cmkMaster/$cmkSite/check_mk/webapi.py?action=get_all_hosts&_username=$AutomationUser&_secret=$AutomationSecret"  | ConvertFrom-Json
-     $resultMessage=$requestResult.result
-     $resultCode=$requestResult.result_code
+     $outputMessage= $resultMessage
 
-     if($resultCode -eq 0)
-     {
-        $outputMessage= $resultMessage
-     }
-     else
-     {
-        $outputMessage= $resultMessage
-     } 
      Write-Host $outputMessage   
 }
 function get-CmkHostTags
