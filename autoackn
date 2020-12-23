@@ -1,0 +1,76 @@
+#!/bin/bash
+##Variables
+servername=$1
+count=1
+serviceOutput=""
+ticketnumber="**(696969)**"
+acknServiceOutput=""
+creationDate=$(date)
+
+########################################
+####       DATA GATHERING            ###
+########################################
+
+# Get the service description
+brokenServicesOutput=$(lq "GET services\nColumns: description service_plugin_output \nFilter: state >= 1 \nFilter: host_name = $servername")
+
+# Getting the broken services
+brokenServices=$(lq "GET services\nColumns: description host_name \nFilter: state >= 1 \nFilter: host_name = $servername")
+
+# Counting the services
+collumncount=$(echo $brokenServices | tr -dc ";" | wc -m)
+
+# getting the Host status
+hostStatus=$(lq "GET hosts\nColumns: state \nFilter: host_name = $servername")
+
+# Add all to the output variable
+while [ $count -le $collumncount ]
+do
+ 	service=$(echo $brokenServices | cut -d ";" -f $count)
+	service=${service#"$servername "}
+	count=$(( $count + 1 ))
+	serviceOutput+=$(echo "$service"";")
+done
+
+
+########################################
+####        PREPARING OT DATA        ###
+####        CREATING OT TICKET       ###
+########################################
+
+customerUser="Monitoring Operations"
+title="$serviceOutput":"brokenServicesOutput"
+description="this is a auto created ticket for: "$serviceOutput":"brokenServicesOutput""
+source="nagios"
+
+
+
+
+
+
+
+
+########################################
+####      HOST STATE CHECK           ###
+####    AND ACTUAL ACKNOWLEDGEMENT   ###
+########################################
+
+
+if [ $hostStatus -eq 1 ]; then
+	lq "COMMAND [$(date +%s)] ACKNOWLEDGE_HOST_PROBLEM;"$servername";2;1;0;Michiel;"$ticketnumber"\n"	
+	acknServiceOutput="the host $servername has been acknowlegded with ticket number $ticketnumber $creationDate"
+else
+	count=1
+	while [ $count -le $collumncount ]
+		do
+        	servicename=$(echo $serviceOutput | cut -d ";" -f $count)
+        	lq "COMMAND [$(date +%s)] ACKNOWLEDGE_SVC_PROBLEM;"$servername";"$servicename";2;1;0;Michiel;"$ticketnumber"\n"
+        	count=$(( $count + 1 ))
+	done
+	acknServiceOutput="the $serviceOutput services  have been acknowlegded with ticket number $ticketnumber $creationDate"
+fi
+
+
+echo $acknServiceOutput
+
+
